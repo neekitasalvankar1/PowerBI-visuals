@@ -543,6 +543,11 @@ module powerbi.extensibility.visual {
             }
             KPITicker.tliChangeImage(KPITicker.oDataView, iIndex, sDivIdName);
         }
+
+        /*
+        * method to create wrapper according to parameter passed.
+        * @param {number} iWrapperID  - ID of the wrapper to be created
+        */
         private static createWrapper(iWrapperID: number): void {
             let sWrapperName: string;
             sWrapperName = `wrapper${iWrapperID}`;
@@ -660,7 +665,7 @@ module powerbi.extensibility.visual {
             // to start with first value when div is empty but data is not available
             KPITicker.iFlagIndex = 0;
             if (KPITicker.iCurrentPosition !== KPITicker.oData.length - 1) {
-                KPITicker.iCurrentPosition = KPITicker.iCurrentPosition % (KPITicker.oData.length);
+                KPITicker.iCurrentPosition = KPITicker.iCurrentPosition % (KPITicker.oData.length - 1);
             }
             // if wrapper1 is present, create wrapper2 and remove wrapper1 after animating it.
             if ($('#wrapper1').length) {
@@ -673,7 +678,6 @@ module powerbi.extensibility.visual {
                 KPITicker.populateWrapper(1, iDivStart);
             }
             // check if index has exceeded the length of data and populate accordingly
-            // TODO
             if (KPITicker.bFlag) {
                 if (KPITicker.iCheckIndex === (KPITicker.oData.length - 1)) {
                     KPITicker.iCurrentPosition = 0;

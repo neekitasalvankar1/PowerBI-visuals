@@ -133,7 +133,7 @@
             "properties": {
                 "numberOfKPI": {
                     "displayName": "KPI count",
-                    "description": "The number of KPIs to be shown at a time. Minimum number is 1 and maximum number is 4",
+                    "description": "The number of KPIs to be shown at a time. Minimum number is 1 and maximum number is 4. KPI count should not be in decimal.",
                     "type": {
                         "numeric": true
                     }
