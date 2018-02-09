@@ -190,7 +190,6 @@ module powerbi.extensibility.visual {
 
             // storing all the data in one variable
             KPITicker.oData = KPITicker.oDataView.table.rows;
-
             // empty the main div when update is called
             $('#wrapper').empty();
 
@@ -199,6 +198,9 @@ module powerbi.extensibility.visual {
 
             // The number of containers. Possible values 1,2,3,4
             KPITicker.iNumberOfKPI = KPITicker.getValue(KPITicker.oDataView, 'numberOfKPI');
+            if (KPITicker.iNumberOfKPI % 1 !== 0) {
+                KPITicker.iNumberOfKPI -= KPITicker.iNumberOfKPI % 1;
+            }
             if (KPITicker.iNumberOfKPI > 4) {
                 KPITicker.iNumberOfKPI = 4;
             } else if (KPITicker.iNumberOfKPI < 1) {
@@ -403,7 +405,8 @@ module powerbi.extensibility.visual {
         * @param {number} iIndicator - to tell if the value to be displayed is Change Percentage or Change Value
         * @param {number} iIndex - index of the data row whose value is to be populated
         */
-        private static appendData(oDataView: DataView, sClassNames: string, iIndicator: number, iIndex: number): string {
+        // tslint:disable-next-line:no-any
+        private static appendData(oDataView: DataView, sClassNames: string, iIndicator: number, iIndex: number, sDivIdName: any): void {
             let sAppendString: string;
             let sValueDisplayed: string;
             let iCurrentValue: number;
@@ -416,21 +419,26 @@ module powerbi.extensibility.visual {
                     iCurrentValue = <number>oDataView.categorical.values[KPITicker.iIndexOfCurrentValue].values[iIndex];
                     iLastValue = <number>oDataView.categorical.values[KPITicker.iIndexOfLastValue].values[iIndex];
                     // if the last KPI value is 0, then the percentage change should be calculated with denominator as 1
-
+                    const title: string = 'KPI Change Percentage: ';
                     if (iLastValue == null || iCurrentValue == null) {
                         sValueDisplayed = '-';
-                        // tslint:disable-next-line:prefer-template
-                        sAppendString = `<div class = "${sClassNames}" title = "KPI Change Percentage:
-                        ${sValueDisplayed}">(${sValueDisplayed})</div>`;
+                        d3.select(sDivIdName).append('div')
+                        .classed(sClassNames, true)
+                        .attr('title', title + sValueDisplayed)
+                        .text(sValueDisplayed);
                     } else {
                         if (iLastValue === 0) {
                             sValueDisplayed = (((iCurrentValue - iLastValue) / 1) * 100).toFixed(2);
                         } else {
                             sValueDisplayed = (((iCurrentValue - iLastValue) / iLastValue) * 100).toFixed(2);
                         }
-                        // tslint:disable-next-line:prefer-template
-                        sAppendString = `<div class = "${sClassNames}" title = "KPI Change Percentage:
-                         ${sValueDisplayed}%">(${sValueDisplayed}%)</div>`;
+                        const openBracket: string = '(';
+                        const closeBracket: string = ') ';
+                        const percent: string = '%';
+                        d3.select(sDivIdName).append('div')
+                        .classed(sClassNames, true)
+                        .attr('title', title + sValueDisplayed + percent)
+                        .text(openBracket + sValueDisplayed + percent + closeBracket);
                     }
 
                 }
@@ -438,6 +446,7 @@ module powerbi.extensibility.visual {
             } else if (iIndicator == 1) {  // if iIndicator is 1, the value to be displayed is KPI Change Value
                 // tslint:disable-next-line:triple-equals
                 if (KPITicker.iIndexOfLastValue != -1 && KPITicker.iIndexOfCurrentValue != -1) {
+                    const title: string = 'KPI Change Percentage: ';
                     iCurrentValue = <number>oDataView.categorical.values[KPITicker.iIndexOfCurrentValue].values[iIndex];
                     iLastValue = <number>oDataView.categorical.values[KPITicker.iIndexOfLastValue].values[iIndex];
                     if (iCurrentValue == null) {
@@ -447,32 +456,32 @@ module powerbi.extensibility.visual {
                     } else {
                         sValueDisplayed = (iCurrentValue - iLastValue).toFixed(2);
                     }
-                    sAppendString = `<div class = "${sClassNames}" title = "KPI Change Value: ${sValueDisplayed}">${sValueDisplayed}</div>`;
+                    d3.select(sDivIdName).append('div')
+                    .classed(sClassNames, true)
+                    .attr('title', title + sValueDisplayed)
+                    .text(sValueDisplayed);
                 }
             }
-
-            return sAppendString;
         }
         /*
         * method to decide what indicator is to be used on the basis of status and display statistics about the kpi
         * @param {DataView} oDataView - DataView of the visual
         * @param {number} iIndex - Index of data to be loaded
         */
-        private static tliChangeImage(oDataView: DataView, iIndex: number): {} {
+        private static tliChangeImage(oDataView: DataView, iIndex: number, sDivIdName: string): void {
             // to store the status of the data that is being populated
             let iTliStatus: number;
-            // the string to append to the innerHTML of the div and the KPI Current value
-            let sAppendString: string;
             let sKPICurrentValue: string;
-            sAppendString = '';
             // if KPI Value column is selected populate it
             if (KPITicker.iIndexOfCurrentValue !== -1) {
                 sKPICurrentValue = <string>oDataView.categorical.values[KPITicker.iIndexOfCurrentValue].values[iIndex];
+                const title: string = 'KPI Current Value: ';
                 if (sKPICurrentValue == null) {
-                    sAppendString += `<br> <div class = "tliPrice" title = "KPI Current Value: ${sKPICurrentValue}">-</div>`;
+                    d3.select(sDivIdName)
+                    .append('div').classed('tliPrice', true).attr('title', title + sKPICurrentValue).text('-');
                 } else {
-                    sAppendString += `<br> <div class = "tliPrice"
-                    title = "KPI Current Value: ${sKPICurrentValue}">${sKPICurrentValue}</div>`;
+                    d3.select(sDivIdName)
+                    .append('div').classed('tliPrice', true).attr('title', title + sKPICurrentValue).text(sKPICurrentValue);
                 }
             }
             // populate the other details on the basis of selection of Status column
@@ -483,36 +492,34 @@ module powerbi.extensibility.visual {
                     // when nTliStatus is 0 that is no change therefore neutral value
                     case 0:
                         if (KPITicker.iIndexOfCurrentValue !== -1) {
-                            sAppendString += `<div class = "neutral indicator"></div>`;
+                            d3.select(sDivIdName).append('div').classed('neutral', true).classed('indicator', true);
                         }
-                        sAppendString += KPITicker.appendData(oDataView, `tliChangePriceNeutral tliChange`, 1, iIndex);
-                        sAppendString += KPITicker.appendData(oDataView, `tliChangeNeutral tliChange`, 0, iIndex);
+                        KPITicker.appendData(oDataView, `tliChangePriceNeutral tliChange`, 1, iIndex, sDivIdName);
+                        KPITicker.appendData(oDataView, `tliChangeNeutral tliChange`, 0, iIndex, sDivIdName);
                         break;
                     // when nTliStatus is 1 that is positive change therefore positive value
                     case 1:
                         if (KPITicker.iIndexOfCurrentValue !== -1) {
-                            sAppendString += `<div class = "arrowUp arrow"> </div>`;
+                            d3.select(sDivIdName).append('div').classed('arrowUp', true).classed('arrow', true);
                         }
-                        sAppendString += KPITicker.appendData(oDataView, `tliChangePricePositive tliChangePrice`, 1, iIndex);
-                        sAppendString += KPITicker.appendData(oDataView, `tliChangePositive tliChange`, 0, iIndex);
+                        KPITicker.appendData(oDataView, `tliChangePricePositive tliChangePrice`, 1, iIndex, sDivIdName);
+                        KPITicker.appendData(oDataView, `tliChangePositive tliChange`, 0, iIndex, sDivIdName);
                         break;
                     // when nTliStatus is -1 that is negative change therefore negative value
                     case -1:
                         if (KPITicker.iIndexOfCurrentValue !== -1) {
-                            sAppendString += `<div class = "arrowDown arrow"> </div>`;
+                            d3.select(sDivIdName).append('div').classed('arrowDown', true).classed('arrow', true);
                         }
-                        sAppendString += KPITicker.appendData(oDataView, `tliChangePriceNegative tliChangePrice`, 1, iIndex);
-                        sAppendString += KPITicker.appendData(oDataView, `tliChangeNegative tliChange`, 0, iIndex);
+                        KPITicker.appendData(oDataView, `tliChangePriceNegative tliChangePrice`, 1, iIndex, sDivIdName);
+                        KPITicker.appendData(oDataView, `tliChangeNegative tliChange`, 0, iIndex, sDivIdName);
                         break;
                     default:
                         break;
                 }
             } else { // if KPITIcker.iIndexOfStatus is -1
-                sAppendString += KPITicker.appendData(oDataView, `tliChangePrice`, 1, iIndex);
-                sAppendString += KPITicker.appendData(oDataView, `tliChange`, 0, iIndex);
+                KPITicker.appendData(oDataView, `tliChangePrice`, 1, iIndex, sDivIdName);
+                KPITicker.appendData(oDataView, `tliChange`, 0, iIndex, sDivIdName);
             }
-
-            return sAppendString;
         }
 
         /*
@@ -524,25 +531,18 @@ module powerbi.extensibility.visual {
         private static populateDiv(oDataView: DataView, nDivID: number, iIndex: number): void {
             // storing the div name to be used
             let sDivIdName: string;
-            sDivIdName = `container${nDivID}`;
-            document.getElementById(sDivIdName).innerHTML = ``;
-            document.getElementById(sDivIdName).innerHTML = ``;
+            sDivIdName = `#container${nDivID}`;
             const className: string = '.tliName';
+            const tliName: string = 'tliName';
             // populate name if KPI Name column is selected
             if (KPITicker.iIndexOfName !== -1) {
-
-                document.getElementById(sDivIdName).innerHTML = `<div class = " tliName tliName${iIndex}">` + `</div>`;
+                d3.select(sDivIdName).append('div').classed('tliName', true)
+                    .classed(tliName + iIndex, true)
+                    .text(<string>oDataView.categorical.categories[KPITicker.iIndexOfName].values[iIndex]);
                 d3.select(className + iIndex).text(<string>oDataView.categorical.categories[KPITicker.iIndexOfName].values[iIndex]);
-
             }
-            // call tliChangeImage to populate other data for the div
-            document.getElementById(sDivIdName).innerHTML += KPITicker.tliChangeImage(KPITicker.oDataView, iIndex);
+            KPITicker.tliChangeImage(KPITicker.oDataView, iIndex, sDivIdName);
         }
-
-        /*
-        * method to create wrapper according to parameter passed.
-        * @param {number} iWrapperID  - ID of the wrapper to be created
-        */
         private static createWrapper(iWrapperID: number): void {
             let sWrapperName: string;
             sWrapperName = `wrapper${iWrapperID}`;
@@ -590,6 +590,7 @@ module powerbi.extensibility.visual {
             }
             // change the values as per the number of containers selected in the format pane
             switch (KPITicker.iNumberOfKPI) {
+
                 case 1:
                     $('.tliName').addClass('tliNameKPIOne');
                     $('.tliPrice').addClass('tliPriceKPIOne');
@@ -659,7 +660,7 @@ module powerbi.extensibility.visual {
             // to start with first value when div is empty but data is not available
             KPITicker.iFlagIndex = 0;
             if (KPITicker.iCurrentPosition !== KPITicker.oData.length - 1) {
-                KPITicker.iCurrentPosition = KPITicker.iCurrentPosition % (KPITicker.oData.length - 1);
+                KPITicker.iCurrentPosition = KPITicker.iCurrentPosition % (KPITicker.oData.length);
             }
             // if wrapper1 is present, create wrapper2 and remove wrapper1 after animating it.
             if ($('#wrapper1').length) {
@@ -672,6 +673,7 @@ module powerbi.extensibility.visual {
                 KPITicker.populateWrapper(1, iDivStart);
             }
             // check if index has exceeded the length of data and populate accordingly
+            // TODO
             if (KPITicker.bFlag) {
                 if (KPITicker.iCheckIndex === (KPITicker.oData.length - 1)) {
                     KPITicker.iCurrentPosition = 0;
@@ -723,7 +725,6 @@ module powerbi.extensibility.visual {
         * @param {number} iWrapperID - id of the wrapper that was created
         */
         private static animateWrapper(iWrapperID: number): void {
-
             let sWrapperTop: string;
             let sWrapperBottom: string;
             if (iWrapperID === 1) {
@@ -733,7 +734,6 @@ module powerbi.extensibility.visual {
                 sWrapperTop = '#wrapper1';
                 sWrapperBottom = '#wrapper2';
             }
-
             $(sWrapperTop).animate({ top: `-=${KPITicker.iHeightOfContainer}px` }, KPITicker.iDelay).dequeue();
             // tslint:disable-next-line:typedef
             $(sWrapperBottom).animate({ top: `-=${KPITicker.iHeightOfContainer}px` }, KPITicker.iDelay, function () {
