@@ -28,12 +28,7 @@
         {
             "displayName": "KPI status",
             "name": "kpiStatus",
-            "kind": "Measure",
-            "requiredTypes": [
-                {
-                    "numeric": true
-                }
-            ]
+            "kind": "Grouping"
         }
     ],
     "dataViewMappings": [
@@ -100,9 +95,18 @@
             ],
             "categorical": {
                 "categories": {
-                    "for": {
-                        "in": "kpiName"
-                    }
+                    "select": [
+                        {
+                            "for": {
+                                "in": "kpiName"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "kpiStatus"
+                            }
+                        }
+                    ]
                 },
                 "values": {
                     "select": [
@@ -114,11 +118,6 @@
                         {
                             "bind": {
                                 "to": "kpiLastValue"
-                            }
-                        },
-                        {
-                            "bind": {
-                                "to": "kpiStatus"
                             }
                         }
                     ]
@@ -133,7 +132,7 @@
             "properties": {
                 "numberOfKPI": {
                     "displayName": "KPI count",
-                    "description": "The number of KPIs to be shown at a time. Minimum number is 1 and maximum number is 4",
+                    "description": "The number of KPIs to be shown at a time. Minimum number is 1 and maximum number is 4. KPI count should not be in decimal.",
                     "type": {
                         "numeric": true
                     }
